@@ -1,0 +1,7 @@
+{
+  "name": "Nexus Supply Chain Intelligence",
+  "description": "AI-powered predictive supply chain monitoring with real-time risk analysis and interactive D3 transit mapping.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "Shipment": {
+      "title": "Shipment",
+      "description": "A logistics shipment in transit.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique shipment ID" },
+        "origin": { "type": "object", "description": "Origin location details" },
+        "destination": { "type": "object", "description": "Destination location details" },
+        "currentLocation": { "type": "object", "description": "Current lat/lng coordinates" },
+        "status": { "type": "string", "enum": ["on-time", "delayed", "at-risk"] },
+        "riskLevel": { "type": "string", "enum": ["low", "medium", "high"] },
+        "eta": { "type": "string", "format": "date", "description": "Estimated time of arrival" },
+        "cargo": { "type": "string", "description": "Type of cargo being transported" },
+        "lastUpdated": { "type": "string", "format": "date-time", "description": "Timestamp of last update" }
+      },
+      "required": ["id", "origin", "destination", "currentLocation", "status", "riskLevel", "eta", "cargo", "lastUpdated"]
+    },
+    "Disruption": {
+      "title": "Disruption",
+      "description": "A supply chain disruption event.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique disruption ID" },
+        "type": { "type": "string", "enum": ["weather", "port-congestion", "labor-strike", "infrastructure"] },
+        "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+        "location": { "type": "object", "description": "Geographic coordinates and impact radius" },
+        "description": { "type": "string", "description": "Detailed description of the disruption" },
+        "impactedShipments": { "type": "array", "items": { "type": "string" }, "description": "List of shipment IDs affected" }
+      },
+      "required": ["id", "type", "severity", "location", "description", "impactedShipments"]
+    }
+  },
+  "firestore": {
+    "/shipments/{shipmentId}": {
+      "schema": "Shipment",
+      "description": "Collection of active shipments."
+    },
+    "/disruptions/{disruptionId}": {
+      "schema": "Disruption",
+      "description": "Collection of active disruptions."
+    }
+  }
+}

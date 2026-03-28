@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: shipments
+    // Fields: id, origin, destination, currentLocation, status, riskLevel, eta, cargo, lastUpdated
+    //
+    // Collection: disruptions
+    // Fields: id, type, severity, location, description, impactedShipments
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "ojaswideep2020@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidShipment(data) {
+      return data.keys().hasAll(['id', 'origin', 'destination', 'currentLocation', 'status', 'riskLevel', 'eta', 'cargo', 'lastUpdated']) &&
+             data.id is string && data.id.size() < 50 &&
+             data.status in ['on-time', 'delayed', 'at-risk'] &&
+             data.riskLevel in ['low', 'medium', 'high'] &&
+             data.cargo is string && data.cargo.size() < 100 &&
+             data.origin is map && data.destination is map && data.currentLocation is map;
+    }
+
+    function isValidDisruption(data) {
+      return data.keys().hasAll(['id', 'type', 'severity', 'location', 'description', 'impactedShipments']) &&
+             data.id is string && data.id.size() < 50 &&
+             data.type in ['weather', 'port-congestion', 'labor-strike', 'infrastructure'] &&
+             data.severity in ['low', 'medium', 'high'] &&
+             data.description is string && data.description.size() < 500 &&
+             data.impactedShipments is list && data.impactedShipments.size() < 100;
+    }
+
+    match /shipments/{shipmentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidShipment(request.resource.data) && request.resource.data.id == shipmentId;
+      allow update: if isAdmin() && isValidShipment(request.resource.data) && 
+                      request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    match /disruptions/{disruptionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidDisruption(request.resource.data) && request.resource.data.id == disruptionId;
+      allow update: if isAdmin() && isValidDisruption(request.resource.data) &&
+                      request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create, update: if isAuthenticated() && request.auth.uid == userId && 
+                             (!('role' in request.resource.data) || request.resource.data.role == 'user' || isAdmin());
+    }
+  }
+}
