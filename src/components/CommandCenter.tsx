@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Shipment, Disruption } from '../types';
 import { startSupplyChainChat } from '../services/geminiService';
-import { MessageSquare, Send, Loader2, User, Bot, X } from 'lucide-react';
+import { MessageSquare, Send, Loader2, User, Bot, X, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion, AnimatePresence } from 'motion/react';
@@ -13,9 +13,15 @@ interface Props {
   onClose: () => void;
 }
 
+interface GroundingChunk {
+  web?: { uri: string; title: string };
+  maps?: { uri: string; title: string };
+}
+
 interface Message {
   role: 'user' | 'model';
   text: string;
+  groundingChunks?: GroundingChunk[];
 }
 
 export const CommandCenter: React.FC<Props> = ({ shipments, disruptions, isOpen, onClose }) => {
@@ -48,7 +54,13 @@ export const CommandCenter: React.FC<Props> = ({ shipments, disruptions, isOpen,
 
     try {
       const response = await chatRef.current.sendMessage({ message: userMessage });
-      setMessages(prev => [...prev, { role: 'model', text: response.text || "I'm sorry, I couldn't process that request." }]);
+      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: response.text || "I'm sorry, I couldn't process that request.",
+        groundingChunks: groundingChunks
+      }]);
     } catch (error) {
       console.error("Chat Error:", error);
       setMessages(prev => [...prev, { role: 'model', text: "Error communicating with Nexus AI. Please check your connection." }]);
@@ -98,6 +110,28 @@ export const CommandCenter: React.FC<Props> = ({ shipments, disruptions, isOpen,
                       {msg.text}
                     </ReactMarkdown>
                   </div>
+                  
+                  {msg.groundingChunks && msg.groundingChunks.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
+                      <div className="text-[10px] uppercase tracking-widest opacity-40 mb-2">Sources & Locations</div>
+                      {msg.groundingChunks.map((chunk, idx) => {
+                        const source = chunk.web || chunk.maps;
+                        if (!source) return null;
+                        return (
+                          <a 
+                            key={idx}
+                            href={source.uri}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-[11px] text-accent hover:underline"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span className="truncate">{source.title || source.uri}</span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}

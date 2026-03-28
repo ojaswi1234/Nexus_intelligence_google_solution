@@ -3,7 +3,7 @@ import { Shipment, Disruption } from '../types';
 import { analyzeSupplyChainRisks } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ShieldAlert, Zap, Loader2 } from 'lucide-react';
+import { ShieldAlert, Zap, Loader2, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
@@ -13,12 +13,14 @@ interface Props {
 
 export const RiskAnalysis: React.FC<Props> = ({ shipments, disruptions }) => {
   const [analysis, setAnalysis] = useState<string>('');
+  const [groundingChunks, setGroundingChunks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const runAnalysis = async () => {
     setLoading(true);
     const result = await analyzeSupplyChainRisks(shipments, disruptions);
-    setAnalysis(result);
+    setAnalysis(result.text);
+    setGroundingChunks(result.groundingChunks || []);
     setLoading(false);
   };
 
@@ -64,9 +66,35 @@ export const RiskAnalysis: React.FC<Props> = ({ shipments, disruptions }) => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="prose prose-invert prose-sm max-w-none text-gray-400 leading-relaxed"
+              className="space-y-6"
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
+              <div className="prose prose-invert prose-sm max-w-none text-gray-400 leading-relaxed">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
+              </div>
+
+              {groundingChunks.length > 0 && (
+                <div className="pt-6 border-t border-white/5">
+                  <div className="text-[10px] uppercase tracking-widest opacity-40 mb-3">Grounding Sources</div>
+                  <div className="space-y-2">
+                    {groundingChunks.map((chunk, idx) => {
+                      const source = chunk.web || chunk.maps;
+                      if (!source) return null;
+                      return (
+                        <a 
+                          key={idx}
+                          href={source.uri}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-[11px] text-accent hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span className="truncate">{source.title || source.uri}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

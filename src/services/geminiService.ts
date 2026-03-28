@@ -9,7 +9,7 @@ const getAI = () => {
 export const analyzeSupplyChainRisks = async (
   shipments: Shipment[],
   disruptions: Disruption[]
-): Promise<string> => {
+): Promise<{ text: string; groundingChunks?: any[] }> => {
   const ai = getAI();
   const prompt = `
     Analyze the following supply chain data and provide a high-level executive summary of critical risks.
@@ -17,6 +17,8 @@ export const analyzeSupplyChainRisks = async (
     
     Shipments: ${JSON.stringify(shipments)}
     Active Disruptions: ${JSON.stringify(disruptions)}
+    
+    Use Google Search to find any real-world global events (weather, strikes, geopolitical issues) that might further impact these specific routes or locations.
     
     Format your response in Markdown. Use a professional, technical tone.
     If you use tables, ensure they are properly formatted with newlines between rows.
@@ -26,11 +28,17 @@ export const analyzeSupplyChainRisks = async (
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
     });
-    return response.text || "No risk analysis available.";
+    return {
+      text: response.text || "No risk analysis available.",
+      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
+    };
   } catch (error) {
     console.error("AI Analysis Error:", error);
-    return "Failed to generate risk analysis.";
+    return { text: "Failed to generate risk analysis." };
   }
 };
 
@@ -44,6 +52,8 @@ export const getRouteOptimization = async (
     
     Shipment Details: ${JSON.stringify(shipment)}
     Disruption Details: ${JSON.stringify(disruption)}
+    
+    Use Google Search and Google Maps to identify the best alternative ports or routes based on real-time traffic, port congestion, and weather conditions.
     
     Provide a recommendation including:
     1. A clear reason for the change.
@@ -65,6 +75,7 @@ export const getRouteOptimization = async (
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        tools: [{ googleSearch: {} }, { googleMaps: {} }],
       },
     });
     return JSON.parse(response.text || "{}");
@@ -87,9 +98,13 @@ export const startSupplyChainChat = (shipments: Shipment[], disruptions: Disrupt
         
         Your goal is to help the user manage logistics, answer questions about specific shipments, 
         and provide insights on how disruptions might impact the network.
+        
+        You MUST use Google Search and Google Maps tools to provide the most accurate and up-to-date information regarding global events, port conditions, and geographic details.
+        
         Be concise, technical, and professional. Use Markdown for formatting.
         If you use tables, ensure they are properly formatted with newlines between rows.
       `,
+      tools: [{ googleSearch: {} }, { googleMaps: {} }],
     },
   });
   return chat;

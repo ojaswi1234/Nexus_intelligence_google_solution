@@ -1,6 +1,6 @@
 # Nexus Supply Chain Intelligence 🌐📦
 
-**Nexus** is a predictive supply chain monitoring system that transforms raw logistics data into actionable intelligence. By combining real-time tracking with advanced AI reasoning, Nexus helps logistics managers stay ahead of global disruptions.
+**Nexus Supply Chain Intelligence** is an AI-powered predictive monitoring platform that transforms raw logistics data into actionable intelligence. By combining real-time tracking with advanced AI reasoning, Nexus helps logistics managers stay ahead of global disruptions.
 
 ## ✨ Key Features
 
@@ -30,8 +30,8 @@
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/nexus-supply-chain.git
-   cd nexus-supply-chain
+   git clone https://github.com/ojaswi1234/nexus-intelligence-google-solution.git
+   cd nexus-intelligence-google-solution
    ```
 
 2. **Install dependencies:**
@@ -50,7 +50,7 @@
    ```json
    {
      "apiKey": "...",
-     "authDomain": "...",
+     "authDomain": "nexus-intelligence-google-solution.vercel.app",
      "projectId": "...",
      "appId": "...",
      "firestoreDatabaseId": "..."
