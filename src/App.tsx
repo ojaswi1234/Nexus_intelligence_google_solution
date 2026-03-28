@@ -73,8 +73,33 @@ export default function App() {
   const [optimizing, setOptimizing] = useState(false);
   const [isCommandCenterOpen, setIsCommandCenterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [customApiKey, setCustomApiKey] = useState<string | null>(
+    sessionStorage.getItem('CUSTOM_GEMINI_API_KEY')
+  );
+  const [keyInput, setKeyInput] = useState('');
 
   const isAdmin = user?.email === "ojaswideep2020@gmail.com";
+
+  // API Key cleanup on tab close
+  useEffect(() => {
+    const handleUnload = () => {
+      sessionStorage.removeItem('CUSTOM_GEMINI_API_KEY');
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, []);
+
+  const handleSaveKey = () => {
+    if (!keyInput.trim()) return;
+    sessionStorage.setItem('CUSTOM_GEMINI_API_KEY', keyInput.trim());
+    setCustomApiKey(keyInput.trim());
+    setKeyInput('');
+  };
+
+  const handleClearKey = () => {
+    sessionStorage.removeItem('CUSTOM_GEMINI_API_KEY');
+    setCustomApiKey(null);
+  };
 
   // Auth listener
   useEffect(() => {
@@ -258,6 +283,19 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-6">
+          <button 
+            onClick={() => !customApiKey && setCustomApiKey('')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 border rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all",
+              customApiKey 
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20" 
+                : "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20 animate-pulse"
+            )}
+          >
+            <Zap className="w-3 h-3" />
+            {customApiKey ? "Session Key Active" : "Set Session Key"}
+          </button>
+
           {isAdmin && (
             <button 
               onClick={seedDatabase}
@@ -331,6 +369,99 @@ export default function App() {
         isOpen={isCommandCenterOpen} 
         onClose={() => setIsCommandCenterOpen(false)} 
       />
+
+      <AnimatePresence>
+        {customApiKey === '' && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => setCustomApiKey(sessionStorage.getItem('CUSTOM_GEMINI_API_KEY'))}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md glass-panel bg-card p-8 shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Zap className="w-8 h-8 text-accent" />
+              </div>
+              <h2 className="text-2xl font-serif italic mb-2 text-center">Session API Key</h2>
+              <p className="text-gray-400 mb-8 text-sm text-center leading-relaxed">
+                Enter your Gemini API key for this session. It will be stored in <strong>sessionStorage</strong> and automatically cleared when you close this tab.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="relative">
+                  <Terminal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40" />
+                  <input 
+                    type="password"
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                    placeholder="Enter API Key..."
+                    className="w-full bg-white/5 border border-border rounded-xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-accent transition-colors"
+                  />
+                </div>
+                
+                <button 
+                  onClick={handleSaveKey}
+                  disabled={!keyInput.trim()}
+                  className="w-full bg-white text-bg font-bold py-4 rounded-xl hover:bg-white/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  Save to Session
+                </button>
+                
+                <button 
+                  onClick={() => setCustomApiKey(sessionStorage.getItem('CUSTOM_GEMINI_API_KEY'))}
+                  className="w-full py-2 text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!customApiKey && customApiKey !== '' && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="relative w-full max-w-md glass-panel bg-card p-8 shadow-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Zap className="w-8 h-8 text-amber-500" />
+              </div>
+              <h2 className="text-2xl font-serif italic mb-4">API Key Required</h2>
+              <p className="text-gray-400 mb-8 text-sm leading-relaxed">
+                To enable AI-powered risk analysis and route optimization, you must provide a Gemini API key for this session.
+              </p>
+              <div className="space-y-4">
+                <button 
+                  onClick={() => setCustomApiKey('')}
+                  className="w-full bg-white text-bg font-bold py-4 rounded-xl hover:bg-white/90 transition-all flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-5 h-5" />
+                  Configure Session Key
+                </button>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                  Key is cleared automatically on tab close.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {selectedShipment && (

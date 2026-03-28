@@ -35,3 +35,12 @@ export interface AIRecommendation {
   suggestedRoute: Location[];
   estimatedTimeSavings: string;
 }
+
+declare global {
+  interface Window {
+    aistudio: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}

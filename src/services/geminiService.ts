@@ -1,12 +1,16 @@
 import { GoogleGenAI } from "@google/genai";
 import { Shipment, Disruption, AIRecommendation } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getAI = () => {
+  const customKey = sessionStorage.getItem('CUSTOM_GEMINI_API_KEY');
+  return new GoogleGenAI({ apiKey: customKey || process.env.GEMINI_API_KEY });
+};
 
 export const analyzeSupplyChainRisks = async (
   shipments: Shipment[],
   disruptions: Disruption[]
 ): Promise<string> => {
+  const ai = getAI();
   const prompt = `
     Analyze the following supply chain data and provide a high-level executive summary of critical risks.
     Focus on shipments that are 'at-risk' or 'delayed' due to active disruptions.
@@ -34,6 +38,7 @@ export const getRouteOptimization = async (
   shipment: Shipment,
   disruption: Disruption
 ): Promise<AIRecommendation> => {
+  const ai = getAI();
   const prompt = `
     Optimize the route for shipment ${shipment.id} which is currently impacted by a ${disruption.type} disruption.
     
@@ -70,6 +75,7 @@ export const getRouteOptimization = async (
 };
 
 export const startSupplyChainChat = (shipments: Shipment[], disruptions: Disruption[]) => {
+  const ai = getAI();
   const chat = ai.chats.create({
     model: "gemini-3-flash-preview",
     config: {
